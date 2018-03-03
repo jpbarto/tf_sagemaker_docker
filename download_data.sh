@@ -3,6 +3,7 @@
 SOURCE_URL='http://yann.lecun.com/exdb/mnist/'
 
 mkdir data
+rm -fr data/*
 
 function download_file () {
     curl -o data/$1 ${SOURCE_URL}/$1
