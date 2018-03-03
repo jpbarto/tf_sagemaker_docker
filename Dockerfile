@@ -2,10 +2,11 @@
 # This is a Python 2 image that uses the nginx, gunicorn, flask stack
 # for serving inferences in a stable way.
 
-FROM ubuntu:16.04
+FROM tensorflow/tensorflow:latest-gpu
+# if a GPU is unavailable for use with Docker use the following TensorFlow image
+# FROM tensorflow/tensorflow:latest
 
-MAINTAINER Amazon AI <sage-learner@amazon.com>
-
+MAINTAINER jpbarto <jason.p.barto@gmail.com>
 
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
          wget \
@@ -34,6 +35,5 @@ ENV PYTHONDONTWRITEBYTECODE=TRUE
 ENV PATH="/opt/program:${PATH}"
 
 # Set up the program in the image
-COPY decision_trees /opt/program
+COPY model_src /opt/program
 WORKDIR /opt/program
-
