@@ -2,9 +2,11 @@
 # This is a Python 2 image that uses the nginx, gunicorn, flask stack
 # for serving inferences in a stable way.
 
-FROM tensorflow/tensorflow:latest-gpu
+# if a GPU IS available for use with Docker use the GPU enabled TensorFlow image
+# FROM tensorflow/tensorflow:latest-gpu
+
 # if a GPU is unavailable for use with Docker use the following TensorFlow image
-# FROM tensorflow/tensorflow:latest
+FROM tensorflow/tensorflow:latest
 
 MAINTAINER jpbarto <jason.p.barto@gmail.com>
 
