@@ -38,9 +38,7 @@ BATCH_SIZE = 64
 EVAL_BATCH_SIZE = 64
 EVAL_FREQUENCY = 100  # Number of steps between evaluations.
 
-
 FLAGS = None
-
 
 def data_type():
     """Return the type of the activations, weights, and placeholder variables."""
@@ -84,10 +82,10 @@ def error_rate(predictions, labels):
         predictions.shape[0])
 
 
-def train_data():
+def train_data(data_path):
     # get the data
-    train_data_filename = '../data/train-images-idx3-ubyte'
-    train_labels_filename = '../data/train-labels-idx1-ubyte'
+    train_data_filename = os.path.join (data_path, 'train-images-idx3-ubyte')
+    train_labels_filename = os.path.join (data_path, 'train-labels-idx1-ubyte')
     # Extract it into numpy arrays.
     train_data = extract_data(train_data_filename, 60000)
     train_labels = extract_labels(train_labels_filename, 60000)
@@ -95,10 +93,10 @@ def train_data():
     return (train_data, train_labels)
 
 
-def test_data():
+def test_data(data_path):
     # Get the data.
-    test_data_filename = '../data/t10k-images-idx3-ubyte'
-    test_labels_filename = '../data/t10k-labels-idx1-ubyte'
+    test_data_filename = os.path.join (data_path, 't10k-images-idx3-ubyte')
+    test_labels_filename = os.path.join (data_path, 't10k-labels-idx1-ubyte')
 
     # Extract it into numpy arrays.
     test_data = extract_data(test_data_filename, 10000)

@@ -1,84 +1,107 @@
 #!/usr/bin/env python
+# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 
-# A sample training component that trains a simple scikit-learn decision tree model.
-# This implementation works in File mode and makes no assumptions about the input file names.
-# Input is specified as CSV with a data point in each row and the labels in the first column.
+"""Simple, end-to-end, LeNet-5-like convolutional MNIST model example.
 
+This should achieve a test error of 0.7%. Please keep this model as simple and
+linear as possible, it is meant as a tutorial for simple convolutional models.
+Run with --self_test on the command line to execute a short self-test.
+"""
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import os
-import json
-import pickle
 import sys
 import traceback
+import json
 
-import pandas as pd
+import model_data
+import model
 
-from sklearn import tree
-
-# These are the paths to where SageMaker mounts interesting things in your container.
-
-prefix = '/opt/ml/'
-
-input_path = prefix + 'input/data'
+prefix = '/opt/ml'
+input_path = os.path.join(prefix, 'input', 'data')
 output_path = os.path.join(prefix, 'output')
 model_path = os.path.join(prefix, 'model')
-param_path = os.path.join(prefix, 'input/config/hyperparameters.json')
+data_config_path = os.path.join(
+    prefix, 'input', 'config', 'inputdataconfig.json')
+param_path = os.path.join(prefix, 'input', 'config', 'hyperparameters.json')
 
-# This algorithm has a single channel of input data called 'training'. Since we run in
-# File mode, the input files are copied to the directory specified here.
-channel_name='training'
-training_path = os.path.join(input_path, channel_name)
+training_channel_name = 'training'
+training_path = os.path.join(input_path, training_channel_name)
+eval_channel_name = 'eval'
+eval_path = os.path.join(input_path, eval_channel_name)
 
-# The function to execute the training.
-def train():
-    print('Starting the training.')
+defaultParams = {
+    'image_size': 28,
+    'num_channels': 1,
+    'pixels': 255,
+    'num_labels': 10,
+    'validation_size': 5000,
+    'seed': None,
+    'batch_size': 64,
+    'epochs': 10,
+    'eval_batch_size': 64,
+    'eval_frequency': 100,
+    'model_path': model_path
+}
+
+
+def merge(src, tgt):
+    for k in src.keys():
+        if k not in tgt:
+            tgt[k] = src[k]
+
+
+def main():
     try:
-        # Read in any hyperparameters that the user passed with the training job
+        training_params = {}
         with open(param_path, 'r') as tc:
-            trainingParams = json.load(tc)
+            training_params = json.load(tc)
 
-        # Take the set of files and read them all into a single pandas dataframe
-        input_files = [ os.path.join(training_path, file) for file in os.listdir(training_path) ]
+        merge(defaultParams, training_params)
+
+        input_files = [os.path.join(training_path, fname)
+                       for fname in os.listdir(training_path)]
         if len(input_files) == 0:
-            raise ValueError(('There are no files in {}.\n' +
-                              'This usually indicates that the channel ({}) was incorrectly specified,\n' +
-                              'the data specification in S3 was incorrectly specified or the role specified\n' +
-                              'does not have permission to access the data.').format(training_path, channel_name))
-        raw_data = [ pd.read_csv(file, header=None) for file in input_files ]
-        train_data = pd.concat(raw_data)
+            raise ValueError("There are no files in {}.\n" +
+                             "This usually indicates the channel {} was incorrectly specified.".format(training_path, training_channel_name))
+        input_files = [os.path.join(eval_path, fname)
+                       for fname in os.listdir(eval_path)]
+        if len(input_files) == 0:
+            raise ValueError("There are no files in {}.\nThis usually indicates the channel {} was incorrectly specified.".format(eval_path, eval_channel_name))
 
-        # labels are in the first column
-        train_y = train_data.ix[:,0]
-        train_X = train_data.ix[:,1:]
-
-        # Here we only support a single hyperparameter. Note that hyperparameters are always passed in as
-        # strings, so we need to do any necessary conversions.
-        max_leaf_nodes = trainingParams.get('max_leaf_nodes', None)
-        if max_leaf_nodes is not None:
-            max_leaf_nodes = int(max_leaf_nodes)
-
-        # Now use scikit-learn's decision tree classifier to train the model.
-        clf = tree.DecisionTreeClassifier(max_leaf_nodes=max_leaf_nodes)
-        clf = clf.fit(train_X, train_y)
-
-        # save the model
-        with open(os.path.join(model_path, 'decision-tree-model.pkl'), 'w') as out:
-            pickle.dump(clf, out)
-        print('Training complete.')
+        (train_data, train_labels) = model_data.train_data(training_path)
+        (test_data, test_labels) = model_data.test_data(eval_path)
+        model.train(
+            train_data_set={'features': train_data, 'labels': train_labels},
+            eval_data_set={'features': test_data, 'labels': test_labels},
+            parameters=training_params
+        )
     except Exception as e:
-        # Write out an error file. This will be returned as the failureReason in the
-        # DescribeTrainingJob result.
         trc = traceback.format_exc()
         with open(os.path.join(output_path, 'failure'), 'w') as s:
-            s.write('Exception during training: ' + str(e) + '\n' + trc)
-        # Printing this causes the exception to be in the training job logs, as well.
-        print('Exception during training: ' + str(e) + '\n' + trc, file=sys.stderr)
-        # A non-zero exit code causes the training job to be marked as Failed.
+            s.write("Exception during training: {}\n{}".format(e, trc))
+        print ("Exception during training: {}\n{}".format(
+            e, trc), file=sys.stderr)
         sys.exit(255)
 
-if __name__ == '__main__':
-    train()
 
-    # A zero exit code causes the job to be marked a Succeeded.
+if __name__ == '__main__':
+    main()
+
+    # a zero exit code causes the job to be marked as Succeeded
     sys.exit(0)

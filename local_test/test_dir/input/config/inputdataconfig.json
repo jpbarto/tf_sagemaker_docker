@@ -1,0 +1,1 @@
+{"training": {"TrainingInputMode": "File", "S3DistributionType": "FullyReplicated", "RecordWrapperType": "None"}, "eval": {"TrainingInputMode": "File", "S3DistributionType": "FullyReplicated", "RecordWrapperType": "None"}}
