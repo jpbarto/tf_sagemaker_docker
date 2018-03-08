@@ -8,15 +8,25 @@ import json
 import StringIO
 
 import flask
+from flask import g
 
 import numpy as np
 import pandas as pd
 
-import model
+import mnist_model
 import model_data
 
 prefix = '/opt/ml/'
-model_path = os.path.join(prefix, 'model')
+model_path = os.path.join(prefix, 'model', 'model.ckpt')
+
+def get_model ():
+    model = getattr (g, '_mnist_model', None)
+    if model is None:
+        model = mnist_model.Model ({})
+        model.restore (model_path)
+        g._mnist_model = model
+
+    return model
 
 # The flask app for serving predictions
 app = flask.Flask(__name__)
@@ -32,8 +42,9 @@ def error_rate(predictions, labels):
 def ping():
     """Determine if the container is working and healthy. In this sample container, we declare
     it healthy if we can load the model successfully."""
-    (test_data, test_labels) = model_data.test_data('/opt/ml/input/data')
-    test_error = error_rate(model.predict(test_data, {'model_path': model_path}), test_labels)
+    model = get_model ()
+    (test_data, test_labels) = model_data.test_data('/opt/ml/input/data/eval')
+    test_error = error_rate(model.predict(test_data), test_labels)
 
     status = 200 if test_error < 10 else 404
     return flask.Response(response='{"test_error": '+ str(test_error) +'}\n', status=status, mimetype='application/json')
@@ -47,23 +58,21 @@ def transformation():
     """
     data = None
 
-    # Convert from CSV to pandas
+    # Convert from JSON to numpy
     if flask.request.content_type == 'text/json':
         data = flask.request.data.decode('utf-8')
         s = StringIO.StringIO(data)
-        data = np.array(json.loads(s), dtype=np.float32)
+        data = np.array(json.load(s), dtype=np.float32)
     else:
         return flask.Response(response='This predictor only supports JSON data', status=415, mimetype='text/plain')
 
-    print('Invoked with {} records'.format(data.shape[0]))
+    (test_data, test_labels) = model_data.test_data('/opt/ml/input/data/eval')
+    print('Input data has shape {}'.format(data.shape))
 
+    model = get_model ()
     # Do the prediction
-    predictions = model.predict(data, {'model_path': model_path})
+    predictions = []
+    for img in data:
+        predictions += model.predict(np.array ([img])).tolist ()
 
-    # Convert from numpy back to CSV
-    out = StringIO.StringIO()
-    pd.DataFrame({'results': predictions}).to_csv(
-        out, header=False, index=False)
-    result = out.getvalue()
-
-    return flask.Response(response=result, status=200, mimetype='text/csv')
+    return flask.Response(response=json.dumps (predictions), status=200, mimetype='text/json')

@@ -30,12 +30,12 @@ import traceback
 import json
 
 import model_data
-import model
+import mnist_model
 
 prefix = '/opt/ml'
 input_path = os.path.join(prefix, 'input', 'data')
 output_path = os.path.join(prefix, 'output')
-model_path = os.path.join(prefix, 'model')
+model_path = os.path.join(prefix, 'model', 'model.ckpt')
 data_config_path = os.path.join(
     prefix, 'input', 'config', 'inputdataconfig.json')
 param_path = os.path.join(prefix, 'input', 'config', 'hyperparameters.json')
@@ -45,34 +45,11 @@ training_path = os.path.join(input_path, training_channel_name)
 eval_channel_name = 'eval'
 eval_path = os.path.join(input_path, eval_channel_name)
 
-defaultParams = {
-    'image_size': 28,
-    'num_channels': 1,
-    'pixels': 255,
-    'num_labels': 10,
-    'validation_size': 5000,
-    'seed': None,
-    'batch_size': 64,
-    'epochs': 10,
-    'eval_batch_size': 64,
-    'eval_frequency': 100,
-    'model_path': model_path
-}
-
-
-def merge(src, tgt):
-    for k in src.keys():
-        if k not in tgt:
-            tgt[k] = src[k]
-
-
 def main():
     try:
         training_params = {}
         with open(param_path, 'r') as tc:
             training_params = json.load(tc)
-
-        merge(defaultParams, training_params)
 
         input_files = [os.path.join(training_path, fname)
                        for fname in os.listdir(training_path)]
@@ -86,11 +63,14 @@ def main():
 
         (train_data, train_labels) = model_data.train_data(training_path)
         (test_data, test_labels) = model_data.test_data(eval_path)
+
+        model = mnist_model.Model (training_params)        
         model.train(
             train_data_set={'features': train_data, 'labels': train_labels},
-            eval_data_set={'features': test_data, 'labels': test_labels},
-            parameters=training_params
+            eval_data_set={'features': test_data, 'labels': test_labels}
         )
+
+        model.save (model_path)
     except Exception as e:
         trc = traceback.format_exc()
         with open(os.path.join(output_path, 'failure'), 'w') as s:
