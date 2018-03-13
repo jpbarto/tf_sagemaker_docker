@@ -12,7 +12,6 @@ SEED = None
 class Model:
     default_parameters = {
         'pixel_depth': 255,
-        'validation_size': 5000,
         'batch_size': 64,
         'epochs': 10,
         'eval_batch_size': 64,
@@ -134,7 +133,6 @@ class Model:
         return tf.matmul(hidden, self.fc2_weights) + self.fc2_biases
 
     def train(self, train_data_set, eval_data_set):
-        validation_size = self.parameters['validation_size']
         batch_size = self.parameters['batch_size']
         eval_batch_size = self.parameters['eval_batch_size']
         eval_frequency = self.parameters['eval_frequency']
@@ -145,6 +143,7 @@ class Model:
         test_labels = eval_data_set['labels']
 
         # Generate a validation set.
+        validation_size = int(train_data.shape[0] * 0.2)
         validation_data = train_data[:validation_size, ...]
         validation_labels = train_labels[:validation_size]
         train_data = train_data[validation_size:, ...]

@@ -64,10 +64,18 @@ def main():
         (train_data, train_labels) = model_data.train_data(training_path)
         (test_data, test_labels) = model_data.test_data(eval_path)
 
-        model = mnist_model.Model (training_params)        
+        model = mnist_model.Model (training_params)
+
+        train_data_size = 60000
+        eval_data_size = 10000
+
+        if 'num_train_records' in training_params:
+            train_data_size = training_params['num_train_records']
+        if 'num_eval_records' in training_params:
+            eval_data_size = training_params['num_eval_records']
         model.train(
-            train_data_set={'features': train_data, 'labels': train_labels},
-            eval_data_set={'features': test_data, 'labels': test_labels}
+                train_data_set={'features': train_data[:train_data_size], 'labels': train_labels[:train_data_size]},
+                eval_data_set={'features': test_data[:eval_data_size], 'labels': test_labels[:eval_data_size]}
         )
 
         model.save (model_path)

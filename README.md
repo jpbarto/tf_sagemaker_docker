@@ -1,4 +1,4 @@
-# Bring-your-own Algorithm Sample
+# Bring-your-own TensorFlow Algorithm Sample for Amazon SageMaker
 
 This example shows how to package an algorithm for use with SageMaker. This packages the sample [CNN MNIST model from TensorFlow](https://www.tensorflow.org/tutorials/layers), the source for which can be found on [GitHub](https://github.com/tensorflow/models/tree/master/tutorials/image/mnist).
 

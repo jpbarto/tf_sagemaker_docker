@@ -1,1 +1,6 @@
-{"my_param": "my_value", "learning_rate": "0.1"}
+{
+    "epochs": 5,
+    "learning_rate": 0.01,
+    "num_train_records": 3000,
+    "num_eval_records": 500
+}
