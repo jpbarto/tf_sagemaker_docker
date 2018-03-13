@@ -14,3 +14,6 @@ download_file train-images-idx3-ubyte.gz
 download_file train-labels-idx1-ubyte.gz
 download_file t10k-images-idx3-ubyte.gz
 download_file t10k-labels-idx1-ubyte.gz
+
+cp data/train* local_test/test_dir/input/data/training
+cp data/t10k* local_test/test_dir/input/data/eval
