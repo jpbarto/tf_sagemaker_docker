@@ -42,14 +42,35 @@ The subdirectory local-test contains scripts and sample data for testing the bui
 * __serve-local.sh__: Instantiate the container configured for serving.
 * __predict.sh__: Run predictions against a locally instantiated server.
 * __test\_dir__: The directory that gets mounted into the container with test data mounted in all the places that match the container schema.
-* __payload.csv__: Sample data for used by predict.sh for testing the server.
+* __sample_data.js__: Sample data for used by predict.sh for testing the server.
+* __sample_labels.js__: Correct labels for comparison with output provided by the __predict.sh__ script.
 
 #### The directory tree mounted into the container
 
-The tree under test-dir is mounted into the container and mimics the directory structure that SageMaker would create for the running container during training or hosting.
-
-* __input/config/hyperparameters.json__: The hyperparameters for the training job.
-* __input/data/training/leaf_train.csv__: The training data.
+The tree under test-dir is mounted into the container under ``/opt/ml`` and mimics the directory structure that SageMaker would create for the running container during training or hosting.
+```
+├── input
+│   ├── config
+│   │   ├── hyperparameters.json
+│   │   ├── inputdataconfig.json
+│   │   └── resourceconfig.json
+│   └── data
+│       ├── eval
+│       │   ├── t10k-images-idx3-ubyte
+│       │   ├── t10k-labels-idx1-ubyte
+│       └── training
+│           ├── train-images-idx3-ubyte
+│           └── train-labels-idx1-ubyte
+├── model
+└── output
+```
+* __hyperparameters.json__: The hyperparameters for the training job.
+* __resourceconfig.json__: The details of the local host running the container and any other containers currently executing training.
+* __inputdataconfig.json__: The details about all data channels configured for this training job.
+* __train-images-idx3-ubyte__: The training data.
+* __train-labels-idx1-ubyte__: The training labels.
+* __t10k-images-idx3-ubyte__: The evaluation data.
+* __t10k-labels-idx1-ubyte__: The evaluation labels.
 * __model__: The directory where the algorithm writes the model file.
 * __output__: The directory where the algorithm can write its success or failure file.
 
